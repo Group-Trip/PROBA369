@@ -1,4 +1,4 @@
-import { FiCheckCircle, FiDownload, FiShare2, FiCalendar, FiMapPin, FiClock, FiUsers, FiTag } from "react-icons/fi";
+import { FiCheckCircle as CheckCircle, FiDownload, FiShare2, FiCalendar, FiMapPin, FiClock, FiUsers, FiTag } from "react-icons/fi";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -129,7 +129,7 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
           <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
             <div className="flex flex-col items-center text-center">
               <div className="bg-amber-500 rounded-full p-3 mb-4">
-                <Users className="w-10 h-10 text-white" />
+                <FiUsers className="w-10 h-10 text-white" />
               </div>
               <h3 className="text-amber-900 mb-2">🎉 Grupa zapełniona!</h3>
               <p className="text-sm text-amber-700 mb-4">
@@ -145,7 +145,7 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
           <Card className="p-6 bg-gradient-to-br from-blue-50 to-turquoise-50 border-blue-200">
             <div className="flex flex-col items-center text-center">
               <div className="bg-blue-100 rounded-full p-3 mb-4">
-                <Users className="w-10 h-10 text-blue-600" />
+                <FiUsers className="w-10 h-10 text-blue-600" />
               </div>
               <h3 className="text-blue-900 mb-2">Czekamy na zapełnienie grupy</h3>
               <p className="text-sm text-blue-700 mb-4">
@@ -164,7 +164,7 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
           <h3 className="mb-4">Szczegóły biletu</h3>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+              <FiMapPin className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-sm text-gray-500">Atrakcja</p>
                 <p>{attraction.name}</p>
@@ -173,7 +173,7 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
             </div>
             <Separator />
             <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
+              <FiCalendar className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-sm text-gray-500">Data wizyty</p>
                 <p>{formatDate(attraction.date)}</p>
@@ -183,7 +183,7 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
             {attraction.time && (
               <>
                 <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <FiClock className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-500">Godzina wejścia</p>
                     <p>{attraction.time}</p>
@@ -193,7 +193,7 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
               </>
             )}
             <div className="flex items-start gap-3">
-              <Users className="w-5 h-5 text-gray-400 mt-0.5" />
+              <FiUsers className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-sm text-gray-500">
                   {numberOfTickets === 1 ? 'Wielkość grupy' : 'Bilety / Wielkość grupy'}
@@ -210,7 +210,7 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
         {/* Actions */}
         <div className="space-y-3">
           <Button className="w-full bg-gradient-to-r from-blue-600 to-turquoise-600 hover:from-blue-700 hover:to-turquoise-700 h-12">
-            <Share2 className="w-5 h-5 mr-2" />
+            <FiShare2 className="w-5 h-5 mr-2" />
             Udostępnij link do grupy
           </Button>
         </div>
