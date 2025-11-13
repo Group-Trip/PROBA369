@@ -15,7 +15,9 @@ interface ProfileScreenProps {
   onNavigate: (screen: string) => void;
 }
 
+// FIXED: ProfileScreen rebuild 2024-11-13 v3
 export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
+  // Fixed: Removed handleSettingsClick - Build 2024-11-13
   const [bookings, setBookings] = useState<any[]>([]);
   const [createdGroups, setCreatedGroups] = useState<any[]>([]);
   const [allUserGroups, setAllUserGroups] = useState<any[]>([]);
