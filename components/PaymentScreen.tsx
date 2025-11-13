@@ -1,4 +1,4 @@
-import { FiArrowLeft as ArrowLeft, FiCreditCard, FiLock, FiCheckCircle, FiGift, FiUsers, FiPlus, FiMinus } from "react-icons/fi";
+import { FiArrowLeft as ArrowLeft, FiCreditCard as CreditCard, FiLock as Lock, FiCheckCircle as CheckCircle, FiGift, FiUsers, FiPlus, FiMinus } from "react-icons/fi";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -305,7 +305,7 @@ export function PaymentScreen({ onNavigate, attraction }: PaymentScreenProps) {
         {/* Payment Method */}
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <FiCreditCard className="w-5 h-5 text-blue-600" />
+            <CreditCard className="w-5 h-5 text-blue-600" />
             <h3>Metoda płatności</h3>
           </div>
 
@@ -364,7 +364,7 @@ export function PaymentScreen({ onNavigate, attraction }: PaymentScreenProps) {
         {/* Security Notice */}
         <Card className="p-4 bg-blue-50 border-blue-200">
           <div className="flex items-start gap-3">
-            <FiLock className="w-5 h-5 text-blue-600 mt-0.5" />
+            <Lock className="w-5 h-5 text-blue-600 mt-0.5" />
             <div>
               <p className="text-blue-900 mb-1">Bezpieczna płatność</p>
               <p className="text-sm text-blue-700">
@@ -379,25 +379,25 @@ export function PaymentScreen({ onNavigate, attraction }: PaymentScreenProps) {
           <p className="mb-3 text-amber-900">📬 Jak otrzymam bilety?</p>
           <div className="space-y-2">
             <div className="flex items-start gap-2">
-              <FiCheckCircle className="w-4 h-4 text-amber-600 mt-0.5" />
+              <CheckCircle className="w-4 h-4 text-amber-600 mt-0.5" />
               <p className="text-sm text-amber-800">
                 Po płatności otrzymasz potwierdzenie rezerwacji
               </p>
             </div>
             <div className="flex items-start gap-2">
-              <FiCheckCircle className="w-4 h-4 text-amber-600 mt-0.5" />
+              <CheckCircle className="w-4 h-4 text-amber-600 mt-0.5" />
               <p className="text-sm text-amber-800">
                 Bilety otrzymasz na email i SMS po zapełnieniu grupy
               </p>
             </div>
             <div className="flex items-start gap-2">
-              <FiCheckCircle className="w-4 h-4 text-amber-600 mt-0.5" />
+              <CheckCircle className="w-4 h-4 text-amber-600 mt-0.5" />
               <p className="text-sm text-amber-800">
                 Gwarancja zwrotu jeśli grupa się nie zapełni
               </p>
             </div>
             <div className="flex items-start gap-2">
-              <FiCheckCircle className="w-4 h-4 text-green-600 mt-0.5" />
+              <CheckCircle className="w-4 h-4 text-green-600 mt-0.5" />
               <p className="text-sm text-green-800">
                 Bilety cyfrowe z kodami QR na e-mail
               </p>
