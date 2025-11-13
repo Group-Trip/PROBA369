@@ -1,4 +1,4 @@
-import { FiArrowLeft, FiTag, FiGift, FiTrendingUp, FiSettings, FiLogOut, FiAward, FiCalendar } from "react-icons/fi";
+import { FiArrowLeft, FiTag, FiGift, FiTrendingUp, FiSettings, FiLogOut, FiAward, FiCalendar, FiShield } from "react-icons/fi";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -9,7 +9,6 @@ import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { auth } from "../lib/auth";
 import { api } from "../lib/api";
 import { attractions } from "../lib/attractions";
-import { FiShield } from "react-icons/fi";
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface ProfileScreenProps {
@@ -116,14 +115,6 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
           >
             <FiArrowLeft size={24} />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-white/20"
-            onClick={handleSettingsClick}
-          >
-            <Settings className="w-6 h-6" />
-          </Button>
         </div>
 
         {/* Profile Info */}
@@ -143,21 +134,21 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
         <div className="grid grid-cols-3 gap-3">
           <Card className="p-4 text-center">
             <div className="flex flex-col items-center">
-              <TrendingUp className="w-6 h-6 text-green-600 mb-2" />
+              <FiTrendingUp className="w-6 h-6 text-green-600 mb-2" />
               <p className="text-gray-900 mb-1">{totalSaved} zł</p>
               <p className="text-xs text-gray-500">Oszczędzone</p>
             </div>
           </Card>
           <Card className="p-4 text-center">
             <div className="flex flex-col items-center">
-              <Ticket className="w-6 h-6 text-blue-600 mb-2" />
+              <FiTag className="w-6 h-6 text-blue-600 mb-2" />
               <p className="text-gray-900 mb-1">{tripsCompleted}</p>
               <p className="text-xs text-gray-500">Wycieczki</p>
             </div>
           </Card>
           <Card className="p-4 text-center">
             <div className="flex flex-col items-center">
-              <Crown className="w-6 h-6 text-purple-600 mb-2" />
+              <FiAward className="w-6 h-6 text-purple-600 mb-2" />
               <p className="text-gray-900 mb-1">{groupsOrganized}</p>
               <p className="text-xs text-gray-500">Zorganizowane</p>
             </div>
@@ -168,7 +159,7 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
         <Card className="p-5 bg-gradient-to-br from-purple-500 to-pink-500 text-white">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Gift className="w-6 h-6" />
+              <FiGift className="w-6 h-6" />
               <h3 className="text-white">Nagrody</h3>
             </div>
             <Badge className="bg-white text-purple-600">Poziom 2</Badge>
@@ -227,7 +218,7 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 mb-2">
-                          <Calendar className="w-3 h-3 text-gray-400" />
+                          <FiCalendar className="w-3 h-3 text-gray-400" />
                           <p className="text-sm text-gray-500">{formatDate(group.date)} · {group.time}</p>
                         </div>
                         <div className="flex items-center justify-between">
@@ -307,7 +298,7 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
             className="w-full justify-start h-12"
             onClick={() => onNavigate("tickets")}
           >
-            <Ticket className="w-5 h-5 mr-3" />
+            <FiTag className="w-5 h-5 mr-3" />
             Wszystkie moje bilety
           </Button>
           
@@ -320,7 +311,7 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
                 className="w-full justify-start h-12 border-purple-200 bg-purple-50 hover:bg-purple-100"
                 onClick={() => onNavigate("admin")}
               >
-                <Shield className="w-5 h-5 mr-3 text-purple-600" />
+                <FiShield className="w-5 h-5 mr-3 text-purple-600" />
                 <span className="text-purple-700">Panel Pracownika</span>
               </Button>
             </>
@@ -336,7 +327,7 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
                 onClick={handleUpgradeToStaff}
                 disabled={isUpgrading}
               >
-                <Shield className="w-5 h-5 mr-3 text-green-600" />
+                <FiShield className="w-5 h-5 mr-3 text-green-600" />
                 <span className="text-green-700">
                   {isUpgrading ? 'Aktualizacja konta...' : '🔑 Aktywuj uprawnienia pracownika'}
                 </span>
@@ -350,7 +341,7 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
             className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
             onClick={handleLogout}
           >
-            <LogOut className="w-5 h-5 mr-3" />
+            <FiLogOut className="w-5 h-5 mr-3" />
             Wyloguj się
           </Button>
         </div>
