@@ -27,6 +27,15 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
   // Check if group is full
   const isFull = groupData?.status === 'full' || groupData?.currentMembers >= groupData?.numberOfPeople;
 
+  // Debug log on load
+  useEffect(() => {
+    console.log('🎉 ConfirmationScreen loaded with attraction:', {
+      groupId: attraction.groupId,
+      name: attraction.name,
+      allData: attraction
+    });
+  }, []);
+
   // Auto-scroll to top when confirmation screen loads
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -73,7 +82,14 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
   };
 
   const handleShare = async () => {
+    console.log('🔵 handleShare clicked!', { 
+      attractionGroupId: attraction.groupId,
+      groupDataId: groupData?.id,
+      attractionData: attraction
+    });
+
     if (!attraction.groupId) {
+      console.log('❌ NO GROUP ID - showing error toast');
       toast.error("Brak ID grupy do udostępnienia");
       return;
     }
@@ -87,30 +103,38 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
 
       // Try native share first (works on mobile)
       if (navigator.share) {
+        console.log('📱 Trying native share...');
         try {
           await navigator.share({
             title: `Dołącz do grupy - ${attraction.name}`,
             text: shareText,
             url: shareUrl,
           });
+          console.log('✅ Native share success!');
           toast.success("Link udostępniony!");
           return;
         } catch (err: any) {
           // User cancelled share or share failed
           if (err.name === 'AbortError') {
+            console.log('⚠️ User cancelled native share');
             return; // User cancelled, don't show error
           }
-          console.log('Native share failed, falling back to clipboard');
+          console.log('⚠️ Native share failed, falling back to clipboard:', err);
         }
+      } else {
+        console.log('📋 navigator.share not available, using clipboard');
       }
 
       // Fallback to clipboard
       try {
+        console.log('📋 Trying clipboard...');
         await navigator.clipboard.writeText(shareText + shareUrl);
+        console.log('✅ Clipboard success!');
         toast.success("Link skopiowany do schowka!", {
           description: "Wyślij znajomym przez WhatsApp, Messenger lub SMS"
         });
       } catch (clipboardErr) {
+        console.log('⚠️ Clipboard failed, trying manual copy:', clipboardErr);
         // Fallback for older browsers
         const textArea = document.createElement('textarea');
         textArea.value = shareText + shareUrl;
@@ -119,9 +143,11 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
         document.body.appendChild(textArea);
         textArea.select();
         try {
-          document.execCommand('copy');
+          const success = document.execCommand('copy');
+          console.log('📋 execCommand copy result:', success);
           toast.success("Link skopiowany do schowka!");
         } catch (err) {
+          console.error('❌ execCommand failed:', err);
           toast.error("Nie udało się skopiować linku");
         }
         document.body.removeChild(textArea);
