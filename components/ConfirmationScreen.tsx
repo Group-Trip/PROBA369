@@ -1,10 +1,11 @@
-import { FiCheckCircle as CheckCircle, FiDownload, FiShare2, FiCalendar, FiMapPin, FiClock, FiUsers, FiTag } from "react-icons/fi";
+import { FiCheckCircle as CheckCircle, FiDownload, FiShare2 as Share2, FiCalendar as Calendar, FiMapPin as MapPin, FiClock as Clock, FiUsers as Users, FiTag } from "react-icons/fi";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Separator } from "./ui/separator";
 import { Badge } from "./ui/badge";
 import { api } from "../lib/api";
+import { toast } from "sonner@2.0.3";
 
 interface ConfirmationScreenProps {
   onNavigate: (screen: string, data?: any) => void;
@@ -71,6 +72,66 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
     return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   };
 
+  const handleShare = async () => {
+    if (!attraction.groupId) {
+      toast.error("Brak ID grupy do udostępnienia");
+      return;
+    }
+
+    try {
+      const shareUrl = `${window.location.origin}/join/${attraction.groupId}`;
+      const spotsLeft = (groupData?.numberOfPeople || attraction.minPeople || 15) - (groupData?.currentMembers || 0);
+      const shareText = `Hej! Dołącz do mojej grupy na ${attraction.name}!\n🎿 Data: ${formatDate(attraction.date)}\n💰 Cena: ${attraction.groupPrice} zł (zamiast ${attraction.regularPrice} zł - ${Math.round((1 - attraction.groupPrice / attraction.regularPrice) * 100)}% taniej!)\n👥 Zostało ${spotsLeft > 0 ? spotsLeft : 0} ${spotsLeft === 1 ? 'miejsce' : spotsLeft <= 4 ? 'miejsca' : 'miejsc'}\n\n`;
+      
+      console.log('📤 Sharing:', { shareUrl, shareText });
+
+      // Try native share first (works on mobile)
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `Dołącz do grupy - ${attraction.name}`,
+            text: shareText,
+            url: shareUrl,
+          });
+          toast.success("Link udostępniony!");
+          return;
+        } catch (err: any) {
+          // User cancelled share or share failed
+          if (err.name === 'AbortError') {
+            return; // User cancelled, don't show error
+          }
+          console.log('Native share failed, falling back to clipboard');
+        }
+      }
+
+      // Fallback to clipboard
+      try {
+        await navigator.clipboard.writeText(shareText + shareUrl);
+        toast.success("Link skopiowany do schowka!", {
+          description: "Wyślij znajomym przez WhatsApp, Messenger lub SMS"
+        });
+      } catch (clipboardErr) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = shareText + shareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          toast.success("Link skopiowany do schowka!");
+        } catch (err) {
+          toast.error("Nie udało się skopiować linku");
+        }
+        document.body.removeChild(textArea);
+      }
+    } catch (error) {
+      console.error('❌ Unexpected error in handleShare:', error);
+      toast.error("Wystąpił błąd: " + (error as Error).message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
       <div className="p-6 space-y-6 pb-8">
@@ -129,7 +190,7 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
           <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
             <div className="flex flex-col items-center text-center">
               <div className="bg-amber-500 rounded-full p-3 mb-4">
-                <FiUsers className="w-10 h-10 text-white" />
+                <Users className="w-10 h-10 text-white" />
               </div>
               <h3 className="text-amber-900 mb-2">🎉 Grupa zapełniona!</h3>
               <p className="text-sm text-amber-700 mb-4">
@@ -145,7 +206,7 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
           <Card className="p-6 bg-gradient-to-br from-blue-50 to-turquoise-50 border-blue-200">
             <div className="flex flex-col items-center text-center">
               <div className="bg-blue-100 rounded-full p-3 mb-4">
-                <FiUsers className="w-10 h-10 text-blue-600" />
+                <Users className="w-10 h-10 text-blue-600" />
               </div>
               <h3 className="text-blue-900 mb-2">Czekamy na zapełnienie grupy</h3>
               <p className="text-sm text-blue-700 mb-4">
@@ -164,7 +225,7 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
           <h3 className="mb-4">Szczegóły biletu</h3>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <FiMapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+              <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-sm text-gray-500">Atrakcja</p>
                 <p>{attraction.name}</p>
@@ -173,7 +234,7 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
             </div>
             <Separator />
             <div className="flex items-start gap-3">
-              <FiCalendar className="w-5 h-5 text-gray-400 mt-0.5" />
+              <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-sm text-gray-500">Data wizyty</p>
                 <p>{formatDate(attraction.date)}</p>
@@ -183,7 +244,7 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
             {attraction.time && (
               <>
                 <div className="flex items-start gap-3">
-                  <FiClock className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-500">Godzina wejścia</p>
                     <p>{attraction.time}</p>
@@ -193,7 +254,7 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
               </>
             )}
             <div className="flex items-start gap-3">
-              <FiUsers className="w-5 h-5 text-gray-400 mt-0.5" />
+              <Users className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-sm text-gray-500">
                   {numberOfTickets === 1 ? 'Wielkość grupy' : 'Bilety / Wielkość grupy'}
@@ -209,8 +270,8 @@ export function ConfirmationScreen({ onNavigate, attraction }: ConfirmationScree
 
         {/* Actions */}
         <div className="space-y-3">
-          <Button className="w-full bg-gradient-to-r from-blue-600 to-turquoise-600 hover:from-blue-700 hover:to-turquoise-700 h-12">
-            <FiShare2 className="w-5 h-5 mr-2" />
+          <Button className="w-full bg-gradient-to-r from-blue-600 to-turquoise-600 hover:from-blue-700 hover:to-turquoise-700 h-12" onClick={handleShare}>
+            <Share2 className="w-5 h-5 mr-2" />
             Udostępnij link do grupy
           </Button>
         </div>
