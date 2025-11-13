@@ -1,4 +1,4 @@
-import { FiArrowLeft, FiUsers, FiClock, FiGift, FiTrendingDown, FiCalendar, FiMapPin, FiTag, FiShare2 } from "react-icons/fi";
+import { FiArrowLeft, FiUsers, FiClock, FiGift, FiTrendingDown, FiCalendar, FiMapPin, FiTag, FiShare2, FiCopy as Copy, FiCheck as Check } from "react-icons/fi";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
