@@ -17,6 +17,7 @@ class ErrorBoundary extends Component<
   { children: ReactNode },
   { hasError: boolean; error: Error | null }
 {
+
   constructor(props: { children: ReactNode }) {
     super(props);
     this.state = { hasError: false, error: null };
