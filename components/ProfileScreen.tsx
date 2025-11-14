@@ -322,22 +322,18 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
                             )}
                           </div>
                           <div className="flex gap-1">
-                            {!ticketsSent && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 px-2"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleShareGroup(group);
-                                  }}
-                                  title="Skopiuj link do udostępnienia"
-                                >
-                                  <FiShare2 className="w-3.5 h-3.5" />
-                                </Button>
-                              </>
-                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleShareGroup(group);
+                              }}
+                              title="Udostępnij grupę"
+                            >
+                              <FiShare2 className="w-3.5 h-3.5" />
+                            </Button>
                             {ticketsSent && (
                               <Button
                                 size="sm"
