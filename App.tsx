@@ -13,12 +13,17 @@ import { PublicGroupPreview } from "./components/PublicGroupPreview";
 import { auth } from "./lib/auth";
 import { Toaster } from "./components/ui/sonner";
 
-class ErrorBoundary extends Component<
-  { children: ReactNode },
-  { hasError: boolean; error: Error | null }
-{
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
 
-  constructor(props: { children: ReactNode }) {
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }
