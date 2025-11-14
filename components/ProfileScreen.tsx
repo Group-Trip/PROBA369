@@ -324,15 +324,15 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
                           <div className="flex gap-1">
                             <Button
                               size="sm"
-                              variant="ghost"
-                              className="h-7 px-2"
+                              variant="outline"
+                              className="h-8 px-3 text-blue-600 border-blue-200 hover:bg-blue-50"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleShareGroup(group);
                               }}
                               title="Udostępnij grupę"
                             >
-                              <FiShare2 className="w-3.5 h-3.5" />
+                              <FiShare2 className="w-4 h-4" />
                             </Button>
                             {ticketsSent && (
                               <Button
