@@ -1,4 +1,4 @@
-import { FiArrowLeft, FiTag, FiGift, FiTrendingUp, FiSettings, FiLogOut, FiAward, FiCalendar, FiShield } from "react-icons/fi";
+import { FiArrowLeft, FiTag, FiGift, FiTrendingUp, FiSettings, FiLogOut, FiAward, FiCalendar, FiShield, FiShare2 } from "react-icons/fi";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -10,9 +10,10 @@ import { auth } from "../lib/auth";
 import { api } from "../lib/api";
 import { attractions } from "../lib/attractions";
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { toast } from "sonner";
 
 interface ProfileScreenProps {
-  onNavigate: (screen: string) => void;
+  onNavigate: (screen: string, data?: any) => void;
 }
 
 // FIXED: ProfileScreen rebuild 2024-11-13 v3
@@ -90,6 +91,79 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
       alert('❌ Błąd: ' + (error.message || 'Nie udało się uzyskać uprawnień pracownika'));
     } finally {
       setIsUpgrading(false);
+    }
+  };
+
+  const handleShareGroup = async (group: any) => {
+    const attraction = attractions.find(a => a.id === group.attractionId);
+    if (!attraction) return;
+
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr + 'T12:00:00');
+      const months = ['stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca', 
+                      'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia'];
+      return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    };
+
+    try {
+      const shareUrl = `${window.location.origin}/join/${group.id}`;
+      const spotsLeft = group.numberOfPeople - group.currentMembers;
+      const shareText = `Hej! Dołącz do mojej grupy na ${attraction.name}!\n🎿 Data: ${formatDate(group.date)} o ${group.time}\n💰 Cena: ${attraction.groupPrice} zł (zamiast ${attraction.regularPrice} zł - ${Math.round((1 - attraction.groupPrice / attraction.regularPrice) * 100)}% taniej!)\n👥 Zostało ${spotsLeft > 0 ? spotsLeft : 0} ${spotsLeft === 1 ? 'miejsce' : spotsLeft <= 4 ? 'miejsca' : 'miejsc'}\n\n`;
+      
+      console.log('📤 Sharing group:', { 
+        groupId: group.id,
+        shareUrl, 
+        shareText,
+        origin: window.location.origin 
+      });
+
+      // Try native share first (works on mobile)
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `Dołącz do grupy - ${attraction.name}`,
+            text: shareText,
+            url: shareUrl,
+          });
+          toast.success("Link udostępniony!");
+          return;
+        } catch (err: any) {
+          if (err.name === 'AbortError') {
+            return; // User cancelled
+          }
+          console.log('Native share failed, falling back to clipboard');
+        }
+      }
+
+      // Fallback to clipboard
+      try {
+        const fullText = shareText + shareUrl;
+        await navigator.clipboard.writeText(fullText);
+        console.log('✅ Copied to clipboard:', fullText);
+        toast.success("Link skopiowany! 🎉", {
+          description: `Grupa ID: ${group.id.substring(0, 8)}... - Wyślij znajomym!`
+        });
+      } catch (clipboardErr) {
+        console.error('Clipboard error:', clipboardErr);
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = shareText + shareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          toast.success("Link skopiowany do schowka!");
+        } catch (err) {
+          console.error('execCommand error:', err);
+          toast.error("Nie udało się skopiować linku");
+        }
+        document.body.removeChild(textArea);
+      }
+    } catch (error) {
+      console.error('❌ Unexpected error in handleShareGroup:', error);
+      toast.error("Wystąpił błąd: " + (error as Error).message);
     }
   };
 
@@ -223,8 +297,8 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
                           <FiCalendar className="w-3 h-3 text-gray-400" />
                           <p className="text-sm text-gray-500">{formatDate(group.date)} · {group.time}</p>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex gap-2 flex-wrap">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex gap-2 flex-wrap flex-1">
                             {isOrganizer && (
                               <Badge variant="secondary" className="bg-purple-100 text-purple-700 text-xs">
                                 👑 Organizator
@@ -247,19 +321,37 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
                               </Badge>
                             )}
                           </div>
-                          {ticketsSent && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onNavigate('tickets', { groupId: group.id });
-                              }}
-                            >
-                              Zobacz
-                            </Button>
-                          )}
+                          <div className="flex gap-1">
+                            {!ticketsSent && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleShareGroup(group);
+                                  }}
+                                  title="Skopiuj link do udostępnienia"
+                                >
+                                  <FiShare2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </>
+                            )}
+                            {ticketsSent && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs px-2"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onNavigate('tickets', { groupId: group.id });
+                                }}
+                              >
+                                Zobacz
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
