@@ -1,445 +1,221 @@
-import { FiArrowLeft, FiTag, FiGift, FiTrendingUp, FiSettings, FiLogOut, FiAward, FiCalendar, FiShield, FiShare2 } from "react-icons/fi";
-import { useState, useEffect } from "react";
-import { Button } from "./ui/button";
-import { Card } from "./ui/card";
-import { Avatar, AvatarFallback } from "./ui/avatar";
-import { Badge } from "./ui/badge";
-import { Separator } from "./ui/separator";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { auth } from "../lib/auth";
-import { api } from "../lib/api";
-import { attractions } from "../lib/attractions";
-import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { toast } from "sonner";
+import { useState, useEffect, useRef, Component, ReactNode } from "react";
+import { WelcomeScreen } from "./components/WelcomeScreen";
+import { AuthScreen } from "./components/AuthScreen";
+import { CreateGroupScreen } from "./components/CreateGroupScreen";
+import { JoinGroupScreen } from "./components/JoinGroupScreen";
+import { GroupDetails } from "./components/GroupDetails";
+import { PaymentScreen } from "./components/PaymentScreen";
+import { ConfirmationScreen } from "./components/ConfirmationScreen";
+import { ProfileScreen } from "./components/ProfileScreen";
+import { TicketsScreen } from "./components/TicketsScreen";
+import { AdminPanel } from "./components/AdminPanel";
+import { PublicGroupPreview } from "./components/PublicGroupPreview";
+import { auth } from "./lib/auth";
+import { Toaster } from "./components/ui/sonner";
 
-interface ProfileScreenProps {
-  onNavigate: (screen: string, data?: any) => void;
+// Error Boundary for iOS Safari compatibility
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+{
+
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-bold text-red-600 mb-4">Coś poszło nie tak</h2>
+            <p className="text-gray-600 mb-4">
+              Wystąpił błąd podczas ładowania aplikacji. Spróbuj odświeżyć stronę.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+            >
+              Odśwież stronę
+            </button>
+            {this.state.error && (
+              <details className="mt-4 text-xs text-gray-500">
+                <summary>Szczegóły techniczne</summary>
+                <pre className="mt-2 overflow-auto">{this.state.error.toString()}</pre>
+              </details>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
-// FIXED: ProfileScreen rebuild 2024-11-13 v3
-export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
-  // Fixed: Removed handleSettingsClick - Build 2024-11-13
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [createdGroups, setCreatedGroups] = useState<any[]>([]);
-  const [allUserGroups, setAllUserGroups] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isUpgrading, setIsUpgrading] = useState(false);
-  const user = auth.getCurrentUser();
-
-  // Auto-scroll to top when profile screen loads
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+export default function App() {
+  const [currentScreen, setCurrentScreen] = useState("auth");
+  const [selectedAttraction, setSelectedAttraction] = useState<any>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const pendingDeepLinkRef = useRef<string | null>(null);
 
   useEffect(() => {
-    fetchUserData();
-  }, []);
-
-  const fetchUserData = async () => {
-    try {
-      setIsLoading(true);
-      const [bookingsData, groupsData, allGroupsData] = await Promise.all([
-        api.getUserBookings(),
-        api.getUserGroups(),
-        api.getAllUserGroups()
-      ]);
-      setBookings(bookingsData.bookings || []);
-      setCreatedGroups(groupsData.groups || []);
-      setAllUserGroups(allGroupsData.groups || []);
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-    } finally {
-      setIsLoading(false);
+    // Check for deep link first (even before auth)
+    const path = window.location.pathname;
+    const joinMatch = path.match(/\/join\/([^\/]+)/);
+    
+    if (joinMatch) {
+      const groupId = joinMatch[1];
+      console.log('🔗 Deep link detected:', groupId);
+      pendingDeepLinkRef.current = groupId;
     }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await auth.signOut();
-      onNavigate("auth");
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const handleUpgradeToStaff = async () => {
-    try {
-      setIsUpgrading(true);
-      const token = localStorage.getItem('access_token') || publicAnonKey;
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72f8f261/upgrade-claudia`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upgrade to staff');
-      }
-
-      alert('✅ ' + data.message);
-      
-      // Reload the page to refresh user data
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    } catch (error: any) {
-      console.error('Error upgrading to staff:', error);
-      alert('❌ Błąd: ' + (error.message || 'Nie udało się uzyskać uprawnień pracownika'));
-    } finally {
-      setIsUpgrading(false);
-    }
-  };
-
-  const handleShareGroup = async (group: any) => {
-    const attraction = attractions.find(a => a.id === group.attractionId);
-    if (!attraction) return;
-
-    const formatDate = (dateStr: string) => {
-      const date = new Date(dateStr + 'T12:00:00');
-      const months = ['stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca', 
-                      'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia'];
-      return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
-    };
-
-    try {
-      const shareUrl = `${window.location.origin}/join/${group.id}`;
-      const spotsLeft = group.numberOfPeople - group.currentMembers;
-      const shareText = `Hej! Dołącz do mojej grupy na ${attraction.name}!\n🎿 Data: ${formatDate(group.date)} o ${group.time}\n💰 Cena: ${attraction.groupPrice} zł (zamiast ${attraction.regularPrice} zł - ${Math.round((1 - attraction.groupPrice / attraction.regularPrice) * 100)}% taniej!)\n👥 Zostało ${spotsLeft > 0 ? spotsLeft : 0} ${spotsLeft === 1 ? 'miejsce' : spotsLeft <= 4 ? 'miejsca' : 'miejsc'}\n\n`;
-      
-      console.log('📤 Sharing group:', { 
-        groupId: group.id,
-        shareUrl, 
-        shareText,
-        origin: window.location.origin 
-      });
-
-      // Try native share first (works on mobile)
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: `Dołącz do grupy - ${attraction.name}`,
-            text: shareText,
-            url: shareUrl,
-          });
-          toast.success("Link udostępniony!");
-          return;
-        } catch (err: any) {
-          if (err.name === 'AbortError') {
-            return; // User cancelled
-          }
-          console.log('Native share failed, falling back to clipboard');
-        }
-      }
-
-      // Fallback to clipboard
+    
+    // Check if user is already logged in
+    const checkAuth = async () => {
+      console.log('🔍 Starting auth check...');
       try {
-        const fullText = shareText + shareUrl;
-        await navigator.clipboard.writeText(fullText);
-        console.log('✅ Copied to clipboard:', fullText);
-        toast.success("Link skopiowany! 🎉", {
-          description: `Grupa ID: ${group.id.substring(0, 8)}... - Wyślij znajomym!`
-        });
-      } catch (clipboardErr) {
-        console.error('Clipboard error:', clipboardErr);
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = shareText + shareUrl;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.select();
-        try {
-          document.execCommand('copy');
-          toast.success("Link skopiowany do schowka!");
-        } catch (err) {
-          console.error('execCommand error:', err);
-          toast.error("Nie udało się skopiować linku");
+        // iOS Safari fix: Check if localStorage is available
+        if (typeof window === 'undefined' || !window.localStorage) {
+          console.warn('localStorage not available');
+          setCurrentScreen("auth");
+          return;
         }
-        document.body.removeChild(textArea);
+        
+        console.log('📡 Calling auth.getSession()...');
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Auth timeout')), 5000)
+        );
+        
+        const session = await Promise.race([
+          auth.getSession(),
+          timeoutPromise
+        ]).catch(err => {
+          console.error('Auth session error:', err);
+          return null;
+        });
+        
+        console.log('✅ Auth session result:', session ? 'logged in' : 'not logged in');
+        
+        if (session) {
+          setIsAuthenticated(true);
+          
+          // If there's a pending deep link, navigate to it
+          if (pendingDeepLinkRef.current) {
+            console.log('🔗 Processing deep link for logged in user:', pendingDeepLinkRef.current);
+            // Clear the URL immediately to prevent loops
+            window.history.replaceState({}, '', '/');
+            setSelectedAttraction({ groupId: pendingDeepLinkRef.current });
+            setCurrentScreen("join-group");
+            pendingDeepLinkRef.current = null;
+          } else {
+            setCurrentScreen("welcome");
+          }
+        } else {
+          // User not logged in
+          if (pendingDeepLinkRef.current) {
+            // Show public preview for deep link
+            console.log('🔗 User not logged in - showing public preview for group:', pendingDeepLinkRef.current);
+            window.history.replaceState({}, '', '/');
+            setSelectedAttraction({ groupId: pendingDeepLinkRef.current });
+            setCurrentScreen("public-group-preview");
+            // Don't clear pendingDeepLinkRef yet - we need it after login
+          } else {
+            console.log('🔗 User not logged in, showing auth screen');
+            setCurrentScreen("auth");
+          }
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        setCurrentScreen("auth");
       }
-    } catch (error) {
-      console.error('❌ Unexpected error in handleShareGroup:', error);
-      toast.error("Wystąpił błąd: " + (error as Error).message);
+    };
+    checkAuth();
+  }, []);
+
+  const handleNavigate = (screen: string, data?: any) => {
+    setCurrentScreen(screen);
+    if (data) {
+      setSelectedAttraction(data);
     }
   };
 
-  const totalSaved = bookings.reduce((sum, booking) => {
-    const attraction = attractions.find(a => a.id === booking.attractionId);
-    if (attraction) {
-      return sum + ((attraction.regularPrice - attraction.groupPrice) * booking.numberOfTickets);
+  const handleAuthSuccess = () => {
+    setIsAuthenticated(true);
+    
+    // If there's a pending deep link after auth, navigate to it
+    if (pendingDeepLinkRef.current) {
+      console.log('🔗 Auth success - processing pending deep link:', pendingDeepLinkRef.current);
+      // Clear the URL immediately to prevent loops
+      window.history.replaceState({}, '', '/');
+      setSelectedAttraction({ groupId: pendingDeepLinkRef.current });
+      setCurrentScreen("join-group");
+      pendingDeepLinkRef.current = null;
+    } else {
+      setCurrentScreen("welcome");
     }
-    return sum;
-  }, 0);
-
-  const tripsCompleted = bookings.length;
-  const groupsOrganized = createdGroups.length;
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-turquoise-500 text-white p-6 pb-24">
-        <div className="flex items-center justify-between mb-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-white/20"
-            onClick={() => onNavigate("welcome")}
-          >
-            <FiArrowLeft size={24} />
-          </Button>
-        </div>
-
-        {/* Profile Info */}
-        <div className="flex flex-col items-center">
-          <Avatar className="w-24 h-24 mb-3 border-4 border-white shadow-lg">
-            <AvatarFallback className="bg-white text-blue-600 text-2xl">
-              {user?.user_metadata?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'GU'}
-            </AvatarFallback>
-          </Avatar>
-          <h2 className="text-white mb-1">{user?.user_metadata?.name || 'Użytkownik'}</h2>
-          <p className="text-white/80">{user?.email}</p>
-        </div>
+    <ErrorBoundary>
+      <div className="max-w-md mx-auto bg-white min-h-screen shadow-2xl">
+        {currentScreen === "auth" && (
+          <AuthScreen onNavigate={handleNavigate} onAuthSuccess={handleAuthSuccess} />
+        )}
+        {currentScreen === "welcome" && (
+          <WelcomeScreen onNavigate={handleNavigate} />
+        )}
+        {currentScreen === "create-group" && (
+          <CreateGroupScreen 
+            onNavigate={handleNavigate} 
+            initialData={selectedAttraction}
+          />
+        )}
+        {currentScreen === "join-group" && (
+          <JoinGroupScreen 
+            onNavigate={handleNavigate}
+            initialGroupId={selectedAttraction?.groupId}
+          />
+        )}
+        {currentScreen === "group-details" && selectedAttraction && (
+          <GroupDetails onNavigate={handleNavigate} attraction={selectedAttraction} />
+        )}
+        {currentScreen === "payment" && selectedAttraction && (
+          <PaymentScreen onNavigate={handleNavigate} attraction={selectedAttraction} />
+        )}
+        {currentScreen === "confirmation" && selectedAttraction && (
+          <ConfirmationScreen onNavigate={handleNavigate} attraction={selectedAttraction} />
+        )}
+        {currentScreen === "profile" && (
+          <ProfileScreen onNavigate={handleNavigate} />
+        )}
+        {currentScreen === "tickets" && (
+          <TicketsScreen onNavigate={handleNavigate} groupId={selectedAttraction?.groupId} />
+        )}
+        {currentScreen === "admin" && (
+          <AdminPanel onNavigate={handleNavigate} />
+        )}
+        {currentScreen === "public-group-preview" && (
+          <PublicGroupPreview 
+            groupId={selectedAttraction?.groupId} 
+            onJoinClick={(groupId) => {
+              // Save groupId and navigate to auth
+              pendingDeepLinkRef.current = groupId;
+              setCurrentScreen("auth");
+            }}
+          />
+        )}
       </div>
-
-      <div className="px-4 -mt-16 space-y-4 pb-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card className="p-4 text-center">
-            <div className="flex flex-col items-center">
-              <FiTrendingUp className="w-6 h-6 text-green-600 mb-2" />
-              <p className="text-gray-900 mb-1">{totalSaved} zł</p>
-              <p className="text-xs text-gray-500">Oszczędzone</p>
-            </div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="flex flex-col items-center">
-              <FiTag className="w-6 h-6 text-blue-600 mb-2" />
-              <p className="text-gray-900 mb-1">{tripsCompleted}</p>
-              <p className="text-xs text-gray-500">Wycieczki</p>
-            </div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="flex flex-col items-center">
-              <FiAward className="w-6 h-6 text-purple-600 mb-2" />
-              <p className="text-gray-900 mb-1">{groupsOrganized}</p>
-              <p className="text-xs text-gray-500">Zorganizowane</p>
-            </div>
-          </Card>
-        </div>
-
-        {/* Rewards Card */}
-        <Card className="p-5 bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <FiGift className="w-6 h-6" />
-              <h3 className="text-white">Nagrody</h3>
-            </div>
-            <Badge className="bg-white text-purple-600">Poziom 2</Badge>
-          </div>
-          <p className="text-white/90 text-sm mb-3">
-            Zdobyłeś 320 punktów! Jeszcze 80 do odblokowania poziomu 3.
-          </p>
-          <div className="bg-white/20 rounded-full h-2 overflow-hidden">
-            <div className="bg-white h-full" style={{ width: '80%' }} />
-          </div>
-        </Card>
-
-        {/* User Groups */}
-        <div>
-          <h3 className="mb-3 px-1">Twoje grupy</h3>
-          {isLoading ? (
-            <Card className="p-8 text-center">
-              <p className="text-gray-600">Ładowanie...</p>
-            </Card>
-          ) : allUserGroups.length === 0 ? (
-            <Card className="p-8 text-center">
-              <p className="text-gray-600 mb-2">Brak grup</p>
-              <p className="text-sm text-gray-500">Dołącz do grupy lub utwórz swoją!</p>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {allUserGroups.map((group) => {
-                const attraction = attractions.find(a => a.id === group.attractionId);
-                if (!attraction) return null;
-                
-                const formatDate = (dateStr: string) => {
-                  const date = new Date(dateStr + 'T12:00:00');
-                  return date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' });
-                };
-
-                const isOrganizer = group.organizerId === user?.id;
-                const myMember = group.members.find((m: any) => m.userId === user?.id);
-                const myTicketsCount = myMember?.numberOfTickets || 0;
-
-                // Check if tickets were sent
-                const ticketsSent = group.ticketsSentAt != null;
-
-                return (
-                  <Card key={group.id} className="overflow-hidden">
-                    <div className="flex gap-3 p-3">
-                      <ImageWithFallback
-                        src={attraction.image}
-                        alt={attraction.name}
-                        className="w-20 h-20 object-cover rounded-lg"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-1">
-                          <div className="pr-2">
-                            <p>{attraction.name}</p>
-                            <p className="text-sm text-gray-500">{attraction.location}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <FiCalendar className="w-3 h-3 text-gray-400" />
-                          <p className="text-sm text-gray-500">{formatDate(group.date)} · {group.time}</p>
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex gap-2 flex-wrap flex-1">
-                            {isOrganizer && (
-                              <Badge variant="secondary" className="bg-purple-100 text-purple-700 text-xs">
-                                👑 Organizator
-                              </Badge>
-                            )}
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-xs">
-                              {myTicketsCount} {myTicketsCount === 1 ? 'miejsce' : myTicketsCount <= 4 ? 'miejsca' : 'miejsc'}
-                            </Badge>
-                            {ticketsSent ? (
-                              <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
-                                ✅ Bilety wysłane
-                              </Badge>
-                            ) : group.status === 'full' ? (
-                              <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-xs">
-                                📞 Weryfikacja z obiektem
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-xs">
-                                ⏳ {group.currentMembers}/{group.numberOfPeople}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex gap-1">
-                            {!ticketsSent && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 px-2"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleShareGroup(group);
-                                  }}
-                                  title="Skopiuj link do udostępnienia"
-                                >
-                                  <FiShare2 className="w-3.5 h-3.5" />
-                                </Button>
-                              </>
-                            )}
-                            {ticketsSent && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 text-xs px-2"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onNavigate('tickets', { groupId: group.id });
-                                }}
-                              >
-                                Zobacz
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Achievements */}
-        <Card className="p-5">
-          <h3 className="mb-4">Osiągnięcia</h3>
-          <div className="grid grid-cols-4 gap-3 text-center">
-            <div>
-              <div className="text-3xl mb-1">🎯</div>
-              <p className="text-xs text-gray-600">Pierwsza wycieczka</p>
-            </div>
-            <div>
-              <div className="text-3xl mb-1">👥</div>
-              <p className="text-xs text-gray-600">Gwiazda grup</p>
-            </div>
-            <div>
-              <div className="text-3xl mb-1">💰</div>
-              <p className="text-xs text-gray-600">Mistrz oszczędzania</p>
-            </div>
-            <div className="opacity-40">
-              <div className="text-3xl mb-1">🏆</div>
-              <p className="text-xs text-gray-600">Legenda</p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Action Buttons */}
-        <div className="space-y-3 pt-4">
-          <Button
-            variant="outline"
-            className="w-full justify-start h-12"
-            onClick={() => onNavigate("tickets")}
-          >
-            <FiTag className="w-5 h-5 mr-3" />
-            Wszystkie moje bilety
-          </Button>
-          
-          {/* Staff Panel - Only visible for staff users */}
-          {auth.isStaff() && (
-            <>
-              <Separator />
-              <Button
-                variant="outline"
-                className="w-full justify-start h-12 border-purple-200 bg-purple-50 hover:bg-purple-100"
-                onClick={() => onNavigate("admin")}
-              >
-                <FiShield className="w-5 h-5 mr-3 text-purple-600" />
-                <span className="text-purple-700">Panel Pracownika</span>
-              </Button>
-            </>
-          )}
-
-          {/* Upgrade button - only for claudia.wolna@op.pl who isn't staff yet */}
-          {!auth.isStaff() && user?.email?.toLowerCase() === 'claudia.wolna@op.pl' && (
-            <>
-              <Separator />
-              <Button
-                variant="outline"
-                className="w-full justify-start h-12 border-green-200 bg-green-50 hover:bg-green-100"
-                onClick={handleUpgradeToStaff}
-                disabled={isUpgrading}
-              >
-                <FiShield className="w-5 h-5 mr-3 text-green-600" />
-                <span className="text-green-700">
-                  {isUpgrading ? 'Aktualizacja konta...' : '🔑 Aktywuj uprawnienia pracownika'}
-                </span>
-              </Button>
-            </>
-          )}
-          
-          <Separator />
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-            onClick={handleLogout}
-          >
-            <FiLogOut className="w-5 h-5 mr-3" />
-            Wyloguj się
-          </Button>
-        </div>
-      </div>
-    </div>
+      <Toaster />
+    </ErrorBoundary>
   );
 }
