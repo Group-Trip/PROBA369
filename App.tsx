@@ -13,12 +13,10 @@ import { PublicGroupPreview } from "./components/PublicGroupPreview";
 import { auth } from "./lib/auth";
 import { Toaster } from "./components/ui/sonner";
 
-// Error Boundary for iOS Safari compatibility
 class ErrorBoundary extends Component<
   { children: ReactNode },
   { hasError: boolean; error: Error | null }
 {
-
   constructor(props: { children: ReactNode }) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -69,7 +67,6 @@ export default function App() {
   const pendingDeepLinkRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Check for deep link first (even before auth)
     const path = window.location.pathname;
     const joinMatch = path.match(/\/join\/([^\/]+)/);
     
@@ -79,11 +76,9 @@ export default function App() {
       pendingDeepLinkRef.current = groupId;
     }
     
-    // Check if user is already logged in
     const checkAuth = async () => {
       console.log('🔍 Starting auth check...');
       try {
-        // iOS Safari fix: Check if localStorage is available
         if (typeof window === 'undefined' || !window.localStorage) {
           console.warn('localStorage not available');
           setCurrentScreen("auth");
@@ -91,7 +86,6 @@ export default function App() {
         }
         
         console.log('📡 Calling auth.getSession()...');
-        // Add timeout to prevent hanging
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Auth timeout')), 5000)
         );
@@ -109,10 +103,8 @@ export default function App() {
         if (session) {
           setIsAuthenticated(true);
           
-          // If there's a pending deep link, navigate to it
           if (pendingDeepLinkRef.current) {
             console.log('🔗 Processing deep link for logged in user:', pendingDeepLinkRef.current);
-            // Clear the URL immediately to prevent loops
             window.history.replaceState({}, '', '/');
             setSelectedAttraction({ groupId: pendingDeepLinkRef.current });
             setCurrentScreen("join-group");
@@ -121,14 +113,11 @@ export default function App() {
             setCurrentScreen("welcome");
           }
         } else {
-          // User not logged in
           if (pendingDeepLinkRef.current) {
-            // Show public preview for deep link
             console.log('🔗 User not logged in - showing public preview for group:', pendingDeepLinkRef.current);
             window.history.replaceState({}, '', '/');
             setSelectedAttraction({ groupId: pendingDeepLinkRef.current });
             setCurrentScreen("public-group-preview");
-            // Don't clear pendingDeepLinkRef yet - we need it after login
           } else {
             console.log('🔗 User not logged in, showing auth screen');
             setCurrentScreen("auth");
@@ -152,10 +141,8 @@ export default function App() {
   const handleAuthSuccess = () => {
     setIsAuthenticated(true);
     
-    // If there's a pending deep link after auth, navigate to it
     if (pendingDeepLinkRef.current) {
       console.log('🔗 Auth success - processing pending deep link:', pendingDeepLinkRef.current);
-      // Clear the URL immediately to prevent loops
       window.history.replaceState({}, '', '/');
       setSelectedAttraction({ groupId: pendingDeepLinkRef.current });
       setCurrentScreen("join-group");
@@ -208,7 +195,6 @@ export default function App() {
           <PublicGroupPreview 
             groupId={selectedAttraction?.groupId} 
             onJoinClick={(groupId) => {
-              // Save groupId and navigate to auth
               pendingDeepLinkRef.current = groupId;
               setCurrentScreen("auth");
             }}
