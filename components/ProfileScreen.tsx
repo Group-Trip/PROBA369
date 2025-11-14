@@ -109,6 +109,7 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
       const shareUrl = `${window.location.origin}/join/${group.id}`;
       const spotsLeft = group.numberOfPeople - group.currentMembers;
       const shareText = `Hej! Dołącz do mojej grupy na ${attraction.name}!\n🎿 Data: ${formatDate(group.date)} o ${group.time}\n💰 Cena: ${attraction.groupPrice} zł (zamiast ${attraction.regularPrice} zł - ${Math.round((1 - attraction.groupPrice / attraction.regularPrice) * 100)}% taniej!)\n👥 Zostało ${spotsLeft > 0 ? spotsLeft : 0} ${spotsLeft === 1 ? 'miejsce' : spotsLeft <= 4 ? 'miejsca' : 'miejsc'}\n\n`;
+      const fullText = shareText + shareUrl;
       
       console.log('📤 Sharing group:', { 
         groupId: group.id,
@@ -131,34 +132,41 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
           if (err.name === 'AbortError') {
             return; // User cancelled
           }
-          console.log('Native share failed, falling back to clipboard');
+          console.log('Native share cancelled or failed, falling back to copy');
         }
       }
 
-      // Fallback to clipboard
+      // Use old-school method that always works
+      const textArea = document.createElement('textarea');
+      textArea.value = fullText;
+      textArea.style.position = 'fixed';
+      textArea.style.top = '0';
+      textArea.style.left = '0';
+      textArea.style.width = '2em';
+      textArea.style.height = '2em';
+      textArea.style.padding = '0';
+      textArea.style.border = 'none';
+      textArea.style.outline = 'none';
+      textArea.style.boxShadow = 'none';
+      textArea.style.background = 'transparent';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
       try {
-        const fullText = shareText + shareUrl;
-        await navigator.clipboard.writeText(fullText);
-        console.log('✅ Copied to clipboard:', fullText);
-        toast.success("Link skopiowany! 🎉", {
-          description: `Grupa ID: ${group.id.substring(0, 8)}... - Wyślij znajomym!`
-        });
-      } catch (clipboardErr) {
-        console.error('Clipboard error:', clipboardErr);
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = shareText + shareUrl;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.select();
-        try {
-          document.execCommand('copy');
-          toast.success("Link skopiowany do schowka!");
-        } catch (err) {
-          console.error('execCommand error:', err);
-          toast.error("Nie udało się skopiować linku");
+        const successful = document.execCommand('copy');
+        if (successful) {
+          console.log('✅ Copied to clipboard:', fullText);
+          toast.success("Link skopiowany! 🎉", {
+            description: "Wyślij znajomym aby dołączyli do grupy!"
+          });
+        } else {
+          throw new Error('execCommand returned false');
         }
+      } catch (err) {
+        console.error('Copy failed:', err);
+        toast.error("Nie udało się skopiować linku");
+      } finally {
         document.body.removeChild(textArea);
       }
     } catch (error) {
@@ -297,57 +305,55 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
                           <FiCalendar className="w-3 h-3 text-gray-400" />
                           <p className="text-sm text-gray-500">{formatDate(group.date)} · {group.time}</p>
                         </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex gap-2 flex-wrap flex-1">
-                            {isOrganizer && (
-                              <Badge variant="secondary" className="bg-purple-100 text-purple-700 text-xs">
-                                👑 Organizator
-                              </Badge>
-                            )}
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-xs">
-                              {myTicketsCount} {myTicketsCount === 1 ? 'miejsce' : myTicketsCount <= 4 ? 'miejsca' : 'miejsc'}
+                        <div className="flex gap-2 flex-wrap mb-2">
+                          {isOrganizer && (
+                            <Badge variant="secondary" className="bg-purple-100 text-purple-700 text-xs">
+                              👑 Organizator
                             </Badge>
-                            {ticketsSent ? (
-                              <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
-                                ✅ Bilety wysłane
-                              </Badge>
-                            ) : group.status === 'full' ? (
-                              <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-xs">
-                                📞 Weryfikacja z obiektem
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-xs">
-                                ⏳ {group.currentMembers}/{group.numberOfPeople}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex gap-1">
+                          )}
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-xs">
+                            {myTicketsCount} {myTicketsCount === 1 ? 'miejsce' : myTicketsCount <= 4 ? 'miejsca' : 'miejsc'}
+                          </Badge>
+                          {ticketsSent ? (
+                            <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
+                              ✅ Bilety wysłane
+                            </Badge>
+                          ) : group.status === 'full' ? (
+                            <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-xs">
+                              📞 Weryfikacja z obiektem
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-xs">
+                              ⏳ {group.currentMembers}/{group.numberOfPeople}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 h-8 text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleShareGroup(group);
+                            }}
+                          >
+                            <FiShare2 className="w-4 h-4 mr-2" />
+                            Udostępnij
+                          </Button>
+                          {ticketsSent && (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-8 px-3 text-blue-600 border-blue-200 hover:bg-blue-50"
+                              className="flex-1 h-8"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleShareGroup(group);
+                                onNavigate('tickets', { groupId: group.id });
                               }}
-                              title="Udostępnij grupę"
                             >
-                              <FiShare2 className="w-4 h-4" />
+                              Zobacz bilety
                             </Button>
-                            {ticketsSent && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 text-xs px-2"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onNavigate('tickets', { groupId: group.id });
-                                }}
-                              >
-                                Zobacz
-                              </Button>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
                     </div>
