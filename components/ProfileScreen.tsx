@@ -345,7 +345,7 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
                             }}
                           >
                             <FiShare2 className="w-4 h-4 mr-2" />
-                            Udostępnij link do grupy swoim znajomym
+                            Zaproś znajomych do grupy
                           </Button>
                           {ticketsSent && (
                             <Button
